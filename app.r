@@ -6,11 +6,11 @@ library(tidyr)
 
 choice_labels <- list(
   "Kalorie",
-  "Aktywność",
+  "Aktywnosc",
   "Nauka",
   "Sen",
   "Kroki",
-  "Płyny",
+  "Plyny",
   "Zadowolenie"
 )
 
@@ -18,9 +18,35 @@ choice_labels <- list(
 data <- read.csv("data.csv") #nolint
 data <- data %>%
     mutate(across(4:9, as.numeric))
+colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
 
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
+
+#data <- data %>%
+#  mutate(dzienTygodnia = weekdays(Data)),
+#         dzienTygodnia = factor(dzienTygodnia, 
+#                                levels = c("Monday", "Tuesday", "Wednesday", 
+#                                           "Thursday", "Friday", "Saturday", "Sunday")))
+
+data <- data %>%
+  mutate(
+    dzienTygodnia = {
+      # Set locale to English
+      original_locale <- Sys.getlocale("LC_TIME")
+      Sys.setlocale("LC_TIME", "C")
+      # Get weekdays in English
+      weekdays(Data)
+    },
+    # Restore original locale
+    { Sys.setlocale("LC_TIME", original_locale) },
+    dzienTygodnia = factor(dzienTygodnia, 
+                           levels = c("Monday", "Tuesday", "Wednesday", 
+                                      "Thursday", "Friday", "Saturday", "Sunday"))
+  )
+
+
+
 
 ui <- fluidPage(
 
@@ -71,7 +97,7 @@ server <- function(input, output) {
   output$scatter <- renderPlotly({
 
     scatter_plot <- data_with_date() %>%
-      ggplot(aes_string(x = "Data", y = input$y, color = "Imię")) +
+      ggplot(aes_string(x = "Data", y = input$y, color = "Imie")) +
       geom_point() +
       scale_color_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
       theme_minimal()
@@ -79,8 +105,8 @@ server <- function(input, output) {
 
     if (input$trend & no_of_dates() > 1) {
       scatter_plot <- scatter_plot +
-        geom_smooth(method = "gam", aes(group = Imię,
-                                        fill = Imię),
+        geom_smooth(method = "gam", aes(group = Imie,
+                                        fill = Imie),
                     show.legend = FALSE,
                     se = FALSE,
                     formula = y ~ s(x, k = 1 + no_of_dates()))
@@ -88,7 +114,7 @@ server <- function(input, output) {
 
     if (input$trend & no_of_dates() == 1) {
       scatter_plot <- scatter_plot +
-        geom_smooth(method = "lm", aes(group = Imię),
+        geom_smooth(method = "lm", aes(group = Imie),
                     se = FALSE)
     }
 
@@ -98,7 +124,7 @@ server <- function(input, output) {
   output$boxplot <- renderPlotly({
 
     boxplot <- data_with_date() %>%
-      ggplot(aes_string(x = "Imię", y = input$y, fill = "Imię")) +
+      ggplot(aes_string(x = "Imie", y = input$y, fill = "Imie")) +
       scale_fill_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
       geom_boxplot() +
       theme_minimal()
@@ -108,7 +134,7 @@ server <- function(input, output) {
 
   output$violin <- renderPlotly({
     violin <- data_with_date() %>%
-      ggplot(aes_string(x = "Imię", y = input$y, fill = "Imię")) +
+      ggplot(aes_string(x = "Imie", y = input$y, fill = "Imie")) +
       scale_fill_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
       geom_violin() +
       theme_minimal()
@@ -119,15 +145,15 @@ server <- function(input, output) {
 
   output$heatmap <- renderPlot({
     data_with_date() %>%
-      group_by(Imię, Zadowolenie) %>%
+      group_by(Imie, Zadowolenie) %>%
       summarise(n = n()) %>%
-      group_by(Imię) %>%
+      group_by(Imie) %>%
       mutate(sum = sum(n)) %>%
       ungroup() %>%
-      complete(Imię = unique(Imię),
+      complete(Imie = unique(Imie),
                Zadowolenie = 1:10,
                fill = list(n = 0, sum = 1)) %>%
-      ggplot(aes(x = Imię, y = as.factor(Zadowolenie), fill  = n / sum)) +
+      ggplot(aes(x = Imie, y = as.factor(Zadowolenie), fill  = n / sum)) +
       geom_tile(width = 0.95, height = 0.80) +
       theme_minimal() +
       labs(y = "Poziom zadowolenia", fill = "Odsetek") +
@@ -135,49 +161,20 @@ server <- function(input, output) {
   })
 
 
-#TODO
   output$col <- renderPlotly({
-    zmienna <- input$y
-    # plotCol <- data %>%
-    #   mutate(Data = as.Date(Data), 
-    #         dzienTygodnia = weekdays(Data),
-    #         dzienTygodnia = factor(dzienTygodnia, 
-    #                                 levels = c("Monday", "Tuesday", "Wednesday", 
-    #                                           "Thursday", "Friday", "Saturday", "Sunday"))) %>%
-    #   group_by(dzienTygodnia)  %>% 
-    #   summarise(val = mean(.data[[zmienna]])) %>% #wybór zmiennej do analizy                             
-    #   ggplot(aes(x = dzienTygodnia, y = val)) +
-    #   geom_col(fill = "lightblue") +
-    #   labs(y = zmienna, x = "Day of the Week", title = paste("Values of Variable:", zmienna)) +
-    #   theme_minimal()
-    colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
-
-    bar_data <- data %>%
-    mutate(Data = as.Date(Data), 
-           dzienTygodnia = weekdays(Data),
-           dzienTygodnia = factor(dzienTygodnia, 
-                                  levels = c("Monday", "Tuesday", "Wednesday", 
-                                             "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+    zmienna <- input$y #Wybór kolumny
+    
+    bar_data <- data_with_date() %>% 
     group_by(dzienTygodnia) %>%
     summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
 
-# Prepare data for line chart (mean per individual per day of the week)
-    line_data <- data %>%
-        mutate(Data = as.Date(Data), 
-              dzienTygodnia = weekdays(Data),
-              dzienTygodnia = factor(dzienTygodnia, 
-                                      levels = c("Monday", "Tuesday", "Wednesday", 
-                                                "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+    line_data <- data_with_date() %>% 
         group_by(Imie, dzienTygodnia) %>%
         summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
 
-    # Plot
     plotCol <- ggplot() +
-    # Bar chart: Overall mean by day of the week
     geom_col(data = bar_data, aes(x = dzienTygodnia, y = val), fill = "lightgreen") +
-    # Line chart: Mean for each individual
-    geom_line(data = line_data, aes(x = dzienTygodnia, y = val, group = Imie, color = Imie)) +
-    # Custom colors for lines
+    geom_line(data = line_data, aes(x = dzienTygodnia, y = val, group = Imie, color = Imie), size = 0.75) +
     scale_color_manual(values = c("Antoni" = "#66C7F4", "Jan" = "#6C6EA0", "Kacper" = "#FF1053")) +
     labs(y = zmienna, x = "Day of the Week", 
          title = paste("Values of Variable:", zmienna)) +
