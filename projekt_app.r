@@ -14,7 +14,9 @@ choice_labels <- list(
   "Zadowolenie"
 )
 
-data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
+#data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
+data <- read.csv("data.csv") #nolint
+
 
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
@@ -52,7 +54,7 @@ ui <- fluidPage(
         tabPanel("Boxplot", plotlyOutput("boxplot")),
         tabPanel("Wykres skrzypcowy", plotlyOutput("violin")),
         tabPanel("Heatmapa", plotOutput("heatmap")),
-        tabPanel("Wykres słupkowy", plotOutput("col"))
+        tabPanel("Wykres słupkowy", plotlyOutput("col"))
       )
     )
   )
@@ -132,10 +134,24 @@ server <- function(input, output) {
   })
 
 
-# TODO
-#   output$col <- render_plot({
+#TODO
+  output$col <- renderPlotly({
+    zmienna <- input$y
+    plotCol <- data %>%
+      mutate(Data = as.Date(Data), 
+            dzienTygodnia = weekdays(Data),
+            dzienTygodnia = factor(dzienTygodnia, 
+                                    levels = c("Monday", "Tuesday", "Wednesday", 
+                                              "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+      group_by(dzienTygodnia)  %>% 
+      summarise(val = mean(.data[[zmienna]])) %>% #wybór zmiennej do analizy                             
+      ggplot(aes(x = dzienTygodnia, y = val)) +
+      geom_col(fill = "lightblue") +
+      labs(y = zmienna, x = "Day of the Week", title = paste("Values of Variable:", zmienna)) +
+      theme_minimal()
     
-#   })
+    ggplotly(plotCol)
+  })
 
 }
 
