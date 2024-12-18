@@ -16,7 +16,8 @@ choice_labels <- list(
 
 #data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
 data <- read.csv("data.csv") #nolint
-
+data <- data %>%
+    mutate(across(4:9, as.numeric))
 
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
@@ -137,19 +138,53 @@ server <- function(input, output) {
 #TODO
   output$col <- renderPlotly({
     zmienna <- input$y
-    plotCol <- data %>%
-      mutate(Data = as.Date(Data), 
-            dzienTygodnia = weekdays(Data),
-            dzienTygodnia = factor(dzienTygodnia, 
-                                    levels = c("Monday", "Tuesday", "Wednesday", 
-                                              "Thursday", "Friday", "Saturday", "Sunday"))) %>%
-      group_by(dzienTygodnia)  %>% 
-      summarise(val = mean(.data[[zmienna]])) %>% #wybór zmiennej do analizy                             
-      ggplot(aes(x = dzienTygodnia, y = val)) +
-      geom_col(fill = "lightblue") +
-      labs(y = zmienna, x = "Day of the Week", title = paste("Values of Variable:", zmienna)) +
-      theme_minimal()
-    
+    # plotCol <- data %>%
+    #   mutate(Data = as.Date(Data), 
+    #         dzienTygodnia = weekdays(Data),
+    #         dzienTygodnia = factor(dzienTygodnia, 
+    #                                 levels = c("Monday", "Tuesday", "Wednesday", 
+    #                                           "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+    #   group_by(dzienTygodnia)  %>% 
+    #   summarise(val = mean(.data[[zmienna]])) %>% #wybór zmiennej do analizy                             
+    #   ggplot(aes(x = dzienTygodnia, y = val)) +
+    #   geom_col(fill = "lightblue") +
+    #   labs(y = zmienna, x = "Day of the Week", title = paste("Values of Variable:", zmienna)) +
+    #   theme_minimal()
+    colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
+
+    bar_data <- data %>%
+    mutate(Data = as.Date(Data), 
+           dzienTygodnia = weekdays(Data),
+           dzienTygodnia = factor(dzienTygodnia, 
+                                  levels = c("Monday", "Tuesday", "Wednesday", 
+                                             "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+    group_by(dzienTygodnia) %>%
+    summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
+
+# Prepare data for line chart (mean per individual per day of the week)
+    line_data <- data %>%
+        mutate(Data = as.Date(Data), 
+              dzienTygodnia = weekdays(Data),
+              dzienTygodnia = factor(dzienTygodnia, 
+                                      levels = c("Monday", "Tuesday", "Wednesday", 
+                                                "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+        group_by(Imie, dzienTygodnia) %>%
+        summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
+
+    # Plot
+    plotCol <- ggplot() +
+    # Bar chart: Overall mean by day of the week
+    geom_col(data = bar_data, aes(x = dzienTygodnia, y = val), fill = "lightgreen") +
+    # Line chart: Mean for each individual
+    geom_line(data = line_data, aes(x = dzienTygodnia, y = val, group = Imie, color = Imie)) +
+    # Custom colors for lines
+    scale_color_manual(values = c("Antoni" = "#66C7F4", "Jan" = "#6C6EA0", "Kacper" = "#FF1053")) +
+    labs(y = zmienna, x = "Day of the Week", 
+         title = paste("Values of Variable:", zmienna)) +
+    theme_minimal()
+
+
+
     ggplotly(plotCol)
   })
 
