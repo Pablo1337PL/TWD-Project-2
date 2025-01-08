@@ -15,6 +15,9 @@ choice_labels <- list(
   "Zadowolenie [1-10]" = "Zadowolenie"
 )
 
+przedzialy <- 
+
+
 #data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
 data <- read.csv("data.csv") #nolint
 data <- data %>%
@@ -157,16 +160,19 @@ server <- function(input, output) {
   output$heatmap <- renderPlot({
     wartosc <- input$y
 
+    przedzial <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+    
     data_with_date() %>%
-      mutate(quantile_group = ntile(.data[[wartosc]], 10)) %>%
+      mutate(quantile_group = sapply(.data[[wartosc]], 
+                                   function(x) przedzial[which.min(abs(przedzial - x))])) %>%
       group_by(Imie, quantile_group) %>%
       summarise(n = n()) %>%
       group_by(Imie) %>%
       mutate(sum = sum(n)) %>%
       ungroup() %>%
       complete(Imie = unique(Imie),
-               quantile_group = 1:10,
-               fill = list(n = 0, sum = 1)) %>%
+              quantile_group = 1:10,
+              fill = list(n = 0, sum = 1)) %>%
       ggplot(aes(x = Imie, y = as.factor(quantile_group), fill  = n / sum)) +
       geom_tile(width = 0.95, height = 0.80) +
       theme_minimal() +
@@ -178,6 +184,7 @@ server <- function(input, output) {
   output$col <- renderPlotly({
     zmienna <- input$y #Wybór kolumny
     
+
     bar_data <- data_with_date() %>% 
     group_by(dzienTygodnia) %>%
     summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
