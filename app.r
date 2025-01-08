@@ -8,15 +8,15 @@ library(shinythemes)
 choice_labels <- list(
   "Kalorie [kcal]" = "Kalorie",
   "Aktywnosc [min]" = "Aktywnosc",
-  "Nauka [h]",
+  "Nauka [h]" = "Nauka",
   "Sen [h]",
   "Kroki [1]",
   "Plyny [L]",
-  "Zadowolenie [1-10]"
+  "Zadowolenie [1-10]" = "Zadowolenie"
 )
 
-data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
-#data <- read.csv("data.csv") #nolint
+#data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
+data <- read.csv("data.csv") #nolint
 data <- data %>%
     mutate(across(4:9, as.numeric))
 colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
@@ -24,8 +24,8 @@ colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kro
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
 
-#data <- data %>%
-#  mutate(dzienTygodnia = weekdays(Data)),
+# data <- data %>%
+#  mutate(dzienTygodnia = weekdays(Data),
 #         dzienTygodnia = factor(dzienTygodnia, 
 #                                levels = c("Monday", "Tuesday", "Wednesday", 
 #                                           "Thursday", "Friday", "Saturday", "Sunday")))
@@ -57,10 +57,10 @@ ui1 <- fluidPage(
 
     sidebarPanel(
 
-      conditionalPanel(
-        condition = "input.tabs != 'Heatmapa'",
-        selectInput("y", "Wybierz wartości", choices = choice_labels)
-      ),
+      selectInput("y", "Wybierz wartości", choices = choice_labels),
+      # conditionalPanel(
+      #   condition = "input.tabs != 'Heatmapa'",
+      # ),
 
       sliderInput("date", "Wybierz zakres czasu:",
                   min = min(data$Data), max = max(data$Data),
@@ -155,16 +155,19 @@ server <- function(input, output) {
   })
 
   output$heatmap <- renderPlot({
+    wartosc <- input$y
+
     data_with_date() %>%
-      group_by(Imie, Zadowolenie) %>%
+      mutate(quantile_group = ntile(.data[[wartosc]], 10)) %>%
+      group_by(Imie, quantile_group) %>%
       summarise(n = n()) %>%
       group_by(Imie) %>%
       mutate(sum = sum(n)) %>%
       ungroup() %>%
       complete(Imie = unique(Imie),
-               Zadowolenie = 1:10,
+               quantile_group = 1:10,
                fill = list(n = 0, sum = 1)) %>%
-      ggplot(aes(x = Imie, y = as.factor(Zadowolenie), fill  = n / sum)) +
+      ggplot(aes(x = Imie, y = as.factor(quantile_group), fill  = n / sum)) +
       geom_tile(width = 0.95, height = 0.80) +
       theme_minimal() +
       labs(y = "Poziom zadowolenia", fill = "Odsetek") +
