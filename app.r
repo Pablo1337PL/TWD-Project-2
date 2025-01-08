@@ -9,13 +9,25 @@ choice_labels <- list(
   "Kalorie [kcal]" = "Kalorie",
   "Aktywnosc [min]" = "Aktywnosc",
   "Nauka [h]" = "Nauka",
-  "Sen [h]",
-  "Kroki [1]",
-  "Plyny [L]",
+  "Sen [h]" = "Sen",
+  "Kroki [1]" = "Kroki",
+  "Plyny [L]" = "Plyny",
   "Zadowolenie [1-10]" = "Zadowolenie"
 )
 
-przedzialy <- 
+labeltoint <- function(label){
+  which(unname(choice_labels) == label);
+}
+
+przedzialy <- list(
+  c(0, 250, 500, 750, 1000, 1500, 2000), #Kalorie
+  c(0, 15, 30, 45, 60, 90, 120, 180, 240, 300), #Aktywnosc
+  c(0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), #Nauka
+  c(4, 5, 6, 7, 7.5, 7.75, 8, 8.25, 8.5, 9, 10, 11, 12), #Sen
+  c(0, 2500, 5000, 7500, 10000, 15000, 20000, 25000, 30000), #Kroki
+  c(1, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5), #Plyny
+  c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+)
 
 
 #data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
@@ -158,33 +170,40 @@ server <- function(input, output) {
   })
 
   output$heatmap <- renderPlot({
-    wartosc <- input$y
+  wartosc <- input$y
 
-    przedzial <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    
-    data_with_date() %>%
-      mutate(quantile_group = sapply(.data[[wartosc]], 
+  # Ensure that the label exists in `choice_labels`
+  if (!wartosc %in% choice_labels) {
+    stop("Invalid choice for 'wartosc'. Ensure it matches a valid label.")
+  }
+
+  # Select the corresponding range from `przedzialy`
+  przedzial <- przedzialy[[labeltoint(wartosc)]]
+
+  # Process and plot the data
+  data_with_date() %>%
+    mutate(quantile_group = sapply(.data[[wartosc]], 
                                    function(x) przedzial[which.min(abs(przedzial - x))])) %>%
-      group_by(Imie, quantile_group) %>%
-      summarise(n = n()) %>%
-      group_by(Imie) %>%
-      mutate(sum = sum(n)) %>%
-      ungroup() %>%
-      complete(Imie = unique(Imie),
-              quantile_group = 1:10,
-              fill = list(n = 0, sum = 1)) %>%
-      ggplot(aes(x = Imie, y = as.factor(quantile_group), fill  = n / sum)) +
-      geom_tile(width = 0.95, height = 0.80) +
-      theme_minimal() +
-      labs(y = "Poziom zadowolenia", fill = "Odsetek") +
-      scale_fill_gradient(low = "#6C6EA0", high = "#FF1053")
-  })
+    group_by(Imie, quantile_group) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(Imie) %>%
+    mutate(sum = sum(n)) %>%
+    ungroup() %>%
+    complete(Imie = unique(Imie),
+             quantile_group = przedzial,
+             fill = list(n = 0, sum = 1)) %>%
+    ggplot(aes(x = Imie, y = as.factor(quantile_group), fill = n / sum)) +
+    geom_tile(width = 0.95, height = 0.80) +
+    theme_minimal() +
+    labs(y = "Poziom zadowolenia", fill = "Odsetek") +
+    scale_fill_gradient(low = "#6C6EA0", high = "#FF1053")
+})
+
 
 
   output$col <- renderPlotly({
     zmienna <- input$y #Wybór kolumny
     
-
     bar_data <- data_with_date() %>% 
     group_by(dzienTygodnia) %>%
     summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
