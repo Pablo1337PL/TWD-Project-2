@@ -3,19 +3,20 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(tidyr)
+library(shinythemes)
 
 choice_labels <- list(
-  "Kalorie",
-  "Aktywnosc",
-  "Nauka",
-  "Sen",
-  "Kroki",
-  "Plyny",
-  "Zadowolenie"
+  "Kalorie [kcal]" = "Kalorie",
+  "Aktywnosc [min]" = "Aktywnosc",
+  "Nauka [h]",
+  "Sen [h]",
+  "Kroki [1]",
+  "Plyny [L]",
+  "Zadowolenie [1-10]"
 )
 
-#data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
-data <- read.csv("data.csv") #nolint
+data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
+#data <- read.csv("data.csv") #nolint
 data <- data %>%
     mutate(across(4:9, as.numeric))
 colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
@@ -29,26 +30,26 @@ data <- data %>%
 #                                levels = c("Monday", "Tuesday", "Wednesday", 
 #                                           "Thursday", "Friday", "Saturday", "Sunday")))
 
-data <- data %>%
-  mutate(
-    dzienTygodnia = {
-      # Set locale to English
-      original_locale <- Sys.getlocale("LC_TIME")
-      Sys.setlocale("LC_TIME", "C")
-      # Get weekdays in English
-      weekdays(Data)
-    },
-    # Restore original locale
-    { Sys.setlocale("LC_TIME", original_locale) },
-    dzienTygodnia = factor(dzienTygodnia, 
-                           levels = c("Monday", "Tuesday", "Wednesday", 
-                                      "Thursday", "Friday", "Saturday", "Sunday"))
-  )
+# data <- data %>%
+#   mutate(
+#     dzienTygodnia = {
+#       # Set locale to English
+#       original_locale <- Sys.getlocale("LC_TIME")
+#       Sys.setlocale("LC_TIME", "C")
+#       # Get weekdays in English
+#       weekdays(Data)
+#     },
+#     # Restore original locale
+#     { Sys.setlocale("LC_TIME", original_locale) },
+#     dzienTygodnia = factor(dzienTygodnia, 
+#                            levels = c("Monday", "Tuesday", "Wednesday", 
+#                                       "Thursday", "Friday", "Saturday", "Sunday"))
+#   )
 
 
 
 
-ui <- fluidPage(
+ui1 <- fluidPage(
 
   titlePanel("TWD Projekt 2"),
 
@@ -86,6 +87,16 @@ ui <- fluidPage(
     )
   )
 )
+
+ui2 <- fluidPage(titlePanel("Rozkład cen samochodów"))
+
+ui3 <- fluidPage(titlePanel("ksdfjlksfdj"))
+
+ui <- navbarPage("Aplikacja z zakładkami",
+                 tabPanel("Wykresy interaktywne", ui1),
+                 tabPanel("Wnioski", ui2),
+                 tabPanel("Modele statystyczne", ui3),
+                 theme = shinytheme("cyborg")) #cyborg slate
 
 server <- function(input, output) {
 
