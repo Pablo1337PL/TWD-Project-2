@@ -23,50 +23,27 @@ labeltoint <- function(label){
 }
 
 przedzialy <- list(
-  c(0, 250, 500, 750, 1000, 1500, 2000), #Kalorie
-  c(0, 15, 30, 45, 60, 90, 120, 180, 240, 300), #Aktywnosc
-  c(0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), #Nauka
-  c(4, 5, 6, 7, 7.5, 7.75, 8, 8.25, 8.5, 9, 10, 11, 12), #Sen
-  c(0, 2500, 5000, 7500, 10000, 15000, 20000, 25000, 30000), #Kroki
-  c(1, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5), #Plyny
+  c(0, 250, 500, 750, 1000, 2000), # kalorie
+  c(0, 15, 30, 45, 60, 90, 120, 300), # aktywnosc
+  c(0, 1, 2, 3, 4, 5, 7, 10), # nauka
+  c(5, 6, 7, 7.5, 8,  8.5, 9, 10, 12), # sen
+  c(0, 2500, 5000, 7500, 10000, 12500, 20000, 30000), # kroki
+  c(1, 1.5, 2, 2.25, 2.5, 2.75, 3, 3.5,4.5), # plyny
   c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) # zadowolenie
 )
 
+
+# loading data
 data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
 # data <- read.csv("data.csv")
 
 
 data <- data %>%
-    mutate(across(4:9, as.numeric))
-colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
+  mutate(across(4:9, as.numeric))
+  colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
 
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
-
-#data <- data %>%
-#  mutate(dzienTygodnia = weekdays(Data)),
-#         dzienTygodnia = factor(dzienTygodnia, 
-#                                levels = c("Monday", "Tuesday", "Wednesday", 
-#                                           "Thursday", "Friday", "Saturday", "Sunday")))
-
-# data <- data %>%
-#   mutate(
-#     dzienTygodnia = {
-#       # Set locale to English
-#       original_locale <- Sys.getlocale("LC_TIME")
-#       Sys.setlocale("LC_TIME", "C")
-#       # Get weekdays in English
-#       weekdays(Data)
-#     },
-#     # Restore original locale
-#     { Sys.setlocale("LC_TIME", original_locale) },
-#     dzienTygodnia = factor(dzienTygodnia, 
-#                            levels = c("Monday", "Tuesday", "Wednesday", 
-#                                       "Thursday", "Friday", "Saturday", "Sunday"))
-#   )
-
-
-
 
 ui1 <- fluidPage(
 
@@ -74,9 +51,7 @@ ui1 <- fluidPage(
 
     sidebarPanel(
 
-      
       selectInput("y", "Wybierz wartości", choices = choice_labels),
-      
 
       sliderInput("date", "Wybierz zakres czasu:",
                   min = min(data$Data), max = max(data$Data),
@@ -117,6 +92,8 @@ server <- function(input, output) {
                                     Data <= input$date[2]))
 
   no_of_dates <- reactive(as.integer(input$date[2] - input$date[1]))
+
+  przedzial <- reactive(przedzialy[[labeltoint(input$y)]])
 
   output$scatter <- renderPlotly({
 
@@ -270,54 +247,32 @@ server <- function(input, output) {
   })
 
   output$heatmap <- renderPlot({
-    wartosc <- input$y
 
-  # Ensure that the label exists in `choice_labels`
-  if (!wartosc %in% choice_labels) {
-    stop("Invalid choice for 'wartosc'. Ensure it matches a valid label.")
-  }
-
-  # Select the corresponding range from `przedzialy`
-  przedzial <- przedzialy[[labeltoint(wartosc)]]
-
-  # Process and plot the data
-  data_with_date() %>%
-    mutate(quantile_group = sapply(.data[[wartosc]], 
-                                   function(x) przedzial[which.min(abs(przedzial - x))])) %>%
-    group_by(Imie, quantile_group) %>%
-    summarise(n = n(), .groups = "drop") %>%
-    group_by(Imie) %>%
-    mutate(sum = sum(n)) %>%
-    ungroup() %>%
-    complete(Imie = unique(Imie),
-             quantile_group = przedzial,
-             fill = list(n = 0, sum = 1)) %>%
-    ggplot(aes(x = Imie, y = as.factor(quantile_group), fill = n / sum)) +
-    geom_tile(width = 0.95, height = 0.80) +
-    theme_minimal() +
-    labs(y = choice_labels_reversed[[input$y]], fill = "Odsetek") +
-    scale_fill_gradient(low = "#6C6EA0", high = "#FF1053") +
-    theme(
-    # Set the background of the plot area (panel) to black
-    panel.background = element_rect(fill = "black"),
-    
-    # Set the background of the entire plot (including outer area) to black
-    plot.background = element_rect(fill = "black"),
-    
-    # Set the background of the legend to black (if applicable)
-    legend.background = element_rect(fill = "black"),
-    
-    # Set axis text color to white for visibility
-    axis.text = element_text(color = "white"),
-    
-    # Set axis title color to white
-    axis.title = element_text(color = "white"),
-    
-    # Set grid line color to gray (for visibility on black background)
-    panel.grid = element_line(color = "black"),
-
-    legend.text = element_text(color = "white")
-  )
+    data_with_date() %>%
+      mutate(quantile_group = sapply(.data[[input$y]],
+                                     function(x) przedzial()[which.min(abs(przedzial() - x))])) %>% #nolint
+      group_by(Imie, quantile_group) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      group_by(Imie) %>%
+      mutate(sum = sum(n)) %>%
+      ungroup() %>%
+      complete(Imie = unique(Imie),
+               quantile_group = przedzial(),
+               fill = list(n = 0, sum = 1)) %>%
+      ggplot(aes(x = Imie, y = as.factor(quantile_group), fill = n / sum)) +
+      geom_tile(width = 0.95, height = 0.80) +
+      theme_minimal() +
+      labs(y = choice_labels_reversed[[input$y]], fill = "Odsetek") +
+      scale_fill_gradient(low = "#6C6EA0", high = "#FF1053") +
+      theme(
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        legend.background = element_rect(fill = "black"),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        panel.grid = element_line(color = "black"),
+        legend.text = element_text(color = "white")
+      )
   })
 
 
