@@ -32,11 +32,7 @@ przedzialy <- list(
   1:10 # zadowolenie
 )
 
-
-# loading data
-#data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
 data <- read.csv("data.csv")
-
 
 data <- data %>%
   mutate(across(4:9, as.numeric))
@@ -44,6 +40,12 @@ data <- data %>%
 
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
+
+data <- data %>%
+  mutate(dzienTygodnia = weekdays(Data),
+         dzienTygodnia = factor(dzienTygodnia,
+                                levels = c("poniedziałek", "wtorek", "środa",
+                                           "czwartek", "piątek", "sobota", "niedziela"))) #nolint
 
 ui1 <- fluidPage(
 
@@ -57,7 +59,6 @@ ui1 <- fluidPage(
                   min = min(data$Data), max = max(data$Data),
                   value = c(min(data$Data), max(data$Data)),
                   timeFormat = "%Y-%m-%d"),
-
 
       conditionalPanel(
         condition = "input.tabs == 'Wykres punktowy'",
@@ -84,7 +85,7 @@ ui2 <- fluidPage()
 ui <- navbarPage("TWD Projekt 2",
                  tabPanel("Wykresy interaktywne", ui1),
                  tabPanel("Wnioski", ui2),
-                 theme = shinytheme("lumen")) #cyborg 
+                 theme = shinytheme("lumen"))
 
 server <- function(input, output) {
 
@@ -161,34 +162,35 @@ server <- function(input, output) {
       ggplot(aes(x = Imie, y = as.factor(quantile_group), fill = n / sum)) +
       geom_tile(width = 0.95, height = 0.80) +
       theme_minimal() +
-      labs(y = choice_labels_reversed[[input$y]], x = "Imię", fill = "Odsetek") +
+      labs(y = choice_labels_reversed[[input$y]], x = "Imię",
+           fill = "Odsetek") +
       scale_fill_gradient(low = "#6C6EA0", high = "#FF1053") +
       theme_minimal()
   })
 
 
   output$col <- renderPlotly({
-    zmienna <- input$y #Wybór kolumny
-    
     bar_data <- data_with_date() %>% 
-    group_by(dzienTygodnia) %>%
-    summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
+      group_by(dzienTygodnia) %>%
+      summarise(val = mean(.data[[input$y]], na.rm = TRUE), .groups = "drop")
 
     line_data <- data_with_date() %>% 
-        group_by(Imie, dzienTygodnia) %>%
-        summarise(val = mean(.data[[zmienna]], na.rm = TRUE), .groups = "drop")
+      group_by(Imie, dzienTygodnia) %>%
+      summarise(val = mean(.data[[input$y]], na.rm = TRUE), .groups = "drop")
 
-    plotCol <- ggplot() +
-    geom_col(data = bar_data, aes(x = dzienTygodnia, y = val), fill = "lightgreen") +
-    geom_line(data = line_data, aes(x = dzienTygodnia, y = val, group = Imie, color = Imie), size = 0.75) +
-    scale_color_manual(values = c("Antoni" = "#66C7F4", "Jan" = "#6C6EA0", "Kacper" = "#FF1053")) +
-    labs(y = zmienna, x = "Day of the Week", 
-         title = paste("Values of Variable:", zmienna)) +
-    theme_minimal()
+    colplot <- ggplot() +
+      geom_col(data = bar_data,
+               aes(x = dzienTygodnia, y = val), fill = "lavender") +
+      geom_line(data = line_data,
+                aes(x = dzienTygodnia, y = val,
+                    group = Imie, color = Imie), size = 0.75) +
+      scale_color_manual(values = c("Antoni" = "#66C7F4", "Jan" = "#6C6EA0", "Kacper" = "#FF1053")) + #nolint
+      labs(y = "Średnia wartość dla wszystkich",
+           x = "Dzień tygodnia", color = "Średnia wartość dla osoby",
+           title = paste("Średnie wartości: ", choice_labels_reversed[[input$y]])) + #nolint
+      theme_minimal()
 
-
-
-    ggplotly(plotCol)
+    ggplotly(colplot)
   })
 
 }
