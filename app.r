@@ -23,19 +23,19 @@ labeltoint <- function(label){
 }
 
 przedzialy <- list(
-  c(0, 250, 500, 750, 1000, 2000), # kalorie
-  c(0, 15, 30, 45, 60, 90, 120, 300), # aktywnosc
-  c(0, 1, 2, 3, 4, 5, 7, 10), # nauka
-  c(5, 6, 7, 7.5, 8,  8.5, 9, 10, 12), # sen
+  seq(0, 1250, 250), # kalorie
+  c(0, 15, 30, 45, 60, 90, 120, 150, 180), # aktywnosc
+  0:8, # nauka
+  5:12, # sen
   c(0, 2500, 5000, 7500, 10000, 12500, 20000, 30000), # kroki
-  c(1, 1.5, 2, 2.25, 2.5, 2.75, 3, 3.5,4.5), # plyny
-  c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) # zadowolenie
+  seq(1, 3, 0.25), # plyny
+  1:10 # zadowolenie
 )
 
 
 # loading data
-data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
-# data <- read.csv("data.csv")
+#data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
+data <- read.csv("data.csv")
 
 
 data <- data %>%
@@ -84,7 +84,7 @@ ui2 <- fluidPage()
 ui <- navbarPage("TWD Projekt 2",
                  tabPanel("Wykresy interaktywne", ui1),
                  tabPanel("Wnioski", ui2),
-                 theme = shinytheme("cyborg"))
+                 theme = shinytheme("lumen")) #cyborg 
 
 server <- function(input, output) {
 
@@ -101,59 +101,25 @@ server <- function(input, output) {
       ggplot(aes_string(x = "Data", y = input$y, color = "Imie")) +
       geom_point() +
       scale_color_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
-      theme_minimal()
+      theme_minimal() +
+      labs(y = choice_labels_reversed[[input$y]])
 
 
     if (input$trend & no_of_dates() > 1) {
       scatter_plot <- scatter_plot +
         geom_smooth(method = "gam", aes(group = Imie,
                                         fill = Imie),
-                    se = TRUE,
+                    se = FALSE,
                     formula = y ~ s(x, k = 1 + no_of_dates()))
     }
 
     if (input$trend & no_of_dates() == 1) {
       scatter_plot <- scatter_plot +
         geom_smooth(method = "lm", aes(group = Imie),
-                    se = TRUE)
+                    se = FALSE)
     }
 
-    ggplotly(scatter_plot)  %>%
-      layout(
-        title = list(
-          font = list(color = "white")
-        ),
-        xaxis = list(
-          title = "Data",
-          color = "white",
-          gridcolor = "white",
-          tickfont = list(
-            color = "white"
-          )
-        ),
-        yaxis = list(
-          title = choice_labels_reversed[[input$y]],
-          color = "white",
-          gridcolor = "white",
-          tickfont = list(
-            color = "white"
-          )
-        ),
-        legend = list(
-          title = list(
-            text = "Osoba",
-            font = list(
-              color = "white"
-            )
-          ),
-          font = list(
-            color = "white"
-          )
-        ),
-        paper_bgcolor = "black",
-        plot_bgcolor = "black"
-      )
-
+    ggplotly(scatter_plot)
   })
 
   output$boxplot <- renderPlotly({
@@ -162,43 +128,10 @@ server <- function(input, output) {
       ggplot(aes_string(x = "Imie", y = input$y, fill = "Imie")) +
       scale_fill_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
       geom_boxplot() +
-      theme_minimal()
+      theme_minimal() +
+      labs(y = choice_labels_reversed[[input$y]])
 
-    ggplotly(boxplot) %>%
-      layout(
-        title = list(
-          font = list(color = "white")
-        ),
-        xaxis = list(
-          title = "Data",
-          color = "white",
-          gridcolor = "white",
-          tickfont = list(
-            color = "white"
-          )
-        ),
-        yaxis = list(
-          title = choice_labels_reversed[[input$y]],
-          color = "white",
-          gridcolor = "white",
-          tickfont = list(
-            color = "white"
-          )
-        ),
-        legend = list(
-          title = list(
-            text = "Osoba",
-            font = list(
-              color = "white"
-            )
-          ),
-          font = list(
-            color = "white"
-          )
-        ),
-        paper_bgcolor = "black",
-        plot_bgcolor = "black"
-      )
+    ggplotly(boxplot)
   })
 
   output$violin <- renderPlotly({
@@ -206,44 +139,10 @@ server <- function(input, output) {
       ggplot(aes_string(x = "Imie", y = input$y, fill = "Imie")) +
       scale_fill_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
       geom_violin() +
-      theme_minimal()
+      theme_minimal() +
+      labs(y = choice_labels_reversed[[input$y]])
 
-    ggplotly(violin) %>%
-      layout(
-        title = list(
-          font = list(color = "white")
-        ),
-        xaxis = list(
-          title = "Data",
-          color = "white",
-          gridcolor = "white",
-          tickfont = list(
-            color = "white"
-          )
-        ),
-        yaxis = list(
-          title = choice_labels_reversed[[input$y]],
-          color = "white",
-          gridcolor = "white",
-          tickfont = list(
-            color = "white"
-          )
-        ),
-        legend = list(
-          title = list(
-            text = "Osoba",
-            font = list(
-              color = "white"
-            )
-          ),
-          font = list(
-            color = "white"
-          )
-        ),
-        paper_bgcolor = "black",
-        plot_bgcolor = "black"
-      )
-
+    ggplotly(violin)
   })
 
   output$heatmap <- renderPlot({
@@ -262,17 +161,9 @@ server <- function(input, output) {
       ggplot(aes(x = Imie, y = as.factor(quantile_group), fill = n / sum)) +
       geom_tile(width = 0.95, height = 0.80) +
       theme_minimal() +
-      labs(y = choice_labels_reversed[[input$y]], fill = "Odsetek") +
+      labs(y = choice_labels_reversed[[input$y]], x = "Imię", fill = "Odsetek") +
       scale_fill_gradient(low = "#6C6EA0", high = "#FF1053") +
-      theme(
-        panel.background = element_rect(fill = "black"),
-        plot.background = element_rect(fill = "black"),
-        legend.background = element_rect(fill = "black"),
-        axis.text = element_text(color = "white"),
-        axis.title = element_text(color = "white"),
-        panel.grid = element_line(color = "black"),
-        legend.text = element_text(color = "white")
-      )
+      theme_minimal()
   })
 
 
