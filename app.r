@@ -7,13 +7,16 @@ library(shinythemes)
 
 choice_labels <- list(
   "Kalorie [kcal]" = "Kalorie",
-  "Aktywnosc [min]" = "Aktywnosc",
+  "Aktywność [min]" = "Aktywnosc",
   "Nauka [h]" = "Nauka",
   "Sen [h]" = "Sen",
   "Kroki [1]" = "Kroki",
-  "Plyny [L]" = "Plyny",
+  "Płyny [L]" = "Plyny",
   "Zadowolenie [1-10]" = "Zadowolenie"
 )
+
+choice_labels_reversed <- setNames(names(choice_labels), choice_labels)
+
 
 labeltoint <- function(label){
   which(unname(choice_labels) == label);
@@ -26,12 +29,13 @@ przedzialy <- list(
   c(4, 5, 6, 7, 7.5, 7.75, 8, 8.25, 8.5, 9, 10, 11, 12), #Sen
   c(0, 2500, 5000, 7500, 10000, 15000, 20000, 25000, 30000), #Kroki
   c(1, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5), #Plyny
-  c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+  c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) # zadowolenie
 )
 
+data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
+# data <- read.csv("data.csv")
 
-#data <- read.csv("/home/antoni/Uni/Semestr-3/TWD/Projekty/Projekt-2/TWD-Project-2/data.csv") #nolint
-data <- read.csv("data.csv") #nolint
+
 data <- data %>%
     mutate(across(4:9, as.numeric))
 colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kroki", "Plyny", "Zadowolenie") #nolint
@@ -39,8 +43,8 @@ colnames(data) <- c("Data", "Imie", "Kalorie", "Aktywnosc", "Nauka", "Sen", "Kro
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
 
-# data <- data %>%
-#  mutate(dzienTygodnia = weekdays(Data),
+#data <- data %>%
+#  mutate(dzienTygodnia = weekdays(Data)),
 #         dzienTygodnia = factor(dzienTygodnia, 
 #                                levels = c("Monday", "Tuesday", "Wednesday", 
 #                                           "Thursday", "Friday", "Saturday", "Sunday")))
@@ -66,16 +70,13 @@ data <- data %>%
 
 ui1 <- fluidPage(
 
-  titlePanel("TWD Projekt 2"),
-
   sidebarLayout(
 
     sidebarPanel(
 
+      
       selectInput("y", "Wybierz wartości", choices = choice_labels),
-      # conditionalPanel(
-      #   condition = "input.tabs != 'Heatmapa'",
-      # ),
+      
 
       sliderInput("date", "Wybierz zakres czasu:",
                   min = min(data$Data), max = max(data$Data),
@@ -103,15 +104,12 @@ ui1 <- fluidPage(
   )
 )
 
-ui2 <- fluidPage(titlePanel("Rozkład cen samochodów"))
+ui2 <- fluidPage()
 
-ui3 <- fluidPage(titlePanel("ksdfjlksfdj"))
-
-ui <- navbarPage("Aplikacja z zakładkami",
+ui <- navbarPage("TWD Projekt 2",
                  tabPanel("Wykresy interaktywne", ui1),
                  tabPanel("Wnioski", ui2),
-                 tabPanel("Modele statystyczne", ui3),
-                 theme = shinytheme("cyborg")) #cyborg slate
+                 theme = shinytheme("cyborg"))
 
 server <- function(input, output) {
 
@@ -133,18 +131,52 @@ server <- function(input, output) {
       scatter_plot <- scatter_plot +
         geom_smooth(method = "gam", aes(group = Imie,
                                         fill = Imie),
-                    show.legend = FALSE,
-                    se = FALSE,
+                    se = TRUE,
                     formula = y ~ s(x, k = 1 + no_of_dates()))
     }
 
     if (input$trend & no_of_dates() == 1) {
       scatter_plot <- scatter_plot +
         geom_smooth(method = "lm", aes(group = Imie),
-                    se = FALSE)
+                    se = TRUE)
     }
 
-    ggplotly(scatter_plot)
+    ggplotly(scatter_plot)  %>%
+      layout(
+        title = list(
+          font = list(color = "white")
+        ),
+        xaxis = list(
+          title = "Data",
+          color = "white",
+          gridcolor = "white",
+          tickfont = list(
+            color = "white"
+          )
+        ),
+        yaxis = list(
+          title = choice_labels_reversed[[input$y]],
+          color = "white",
+          gridcolor = "white",
+          tickfont = list(
+            color = "white"
+          )
+        ),
+        legend = list(
+          title = list(
+            text = "Osoba",
+            font = list(
+              color = "white"
+            )
+          ),
+          font = list(
+            color = "white"
+          )
+        ),
+        paper_bgcolor = "black",
+        plot_bgcolor = "black"
+      )
+
   })
 
   output$boxplot <- renderPlotly({
@@ -155,7 +187,41 @@ server <- function(input, output) {
       geom_boxplot() +
       theme_minimal()
 
-    ggplotly(boxplot)
+    ggplotly(boxplot) %>%
+      layout(
+        title = list(
+          font = list(color = "white")
+        ),
+        xaxis = list(
+          title = "Data",
+          color = "white",
+          gridcolor = "white",
+          tickfont = list(
+            color = "white"
+          )
+        ),
+        yaxis = list(
+          title = choice_labels_reversed[[input$y]],
+          color = "white",
+          gridcolor = "white",
+          tickfont = list(
+            color = "white"
+          )
+        ),
+        legend = list(
+          title = list(
+            text = "Osoba",
+            font = list(
+              color = "white"
+            )
+          ),
+          font = list(
+            color = "white"
+          )
+        ),
+        paper_bgcolor = "black",
+        plot_bgcolor = "black"
+      )
   })
 
   output$violin <- renderPlotly({
@@ -165,12 +231,46 @@ server <- function(input, output) {
       geom_violin() +
       theme_minimal()
 
-    ggplotly(violin)
+    ggplotly(violin) %>%
+      layout(
+        title = list(
+          font = list(color = "white")
+        ),
+        xaxis = list(
+          title = "Data",
+          color = "white",
+          gridcolor = "white",
+          tickfont = list(
+            color = "white"
+          )
+        ),
+        yaxis = list(
+          title = choice_labels_reversed[[input$y]],
+          color = "white",
+          gridcolor = "white",
+          tickfont = list(
+            color = "white"
+          )
+        ),
+        legend = list(
+          title = list(
+            text = "Osoba",
+            font = list(
+              color = "white"
+            )
+          ),
+          font = list(
+            color = "white"
+          )
+        ),
+        paper_bgcolor = "black",
+        plot_bgcolor = "black"
+      )
 
   })
 
   output$heatmap <- renderPlot({
-  wartosc <- input$y
+    wartosc <- input$y
 
   # Ensure that the label exists in `choice_labels`
   if (!wartosc %in% choice_labels) {
@@ -195,10 +295,30 @@ server <- function(input, output) {
     ggplot(aes(x = Imie, y = as.factor(quantile_group), fill = n / sum)) +
     geom_tile(width = 0.95, height = 0.80) +
     theme_minimal() +
-    labs(y = "Poziom zadowolenia", fill = "Odsetek") +
-    scale_fill_gradient(low = "#6C6EA0", high = "#FF1053")
-})
+    labs(y = choice_labels_reversed[[input$y]], fill = "Odsetek") +
+    scale_fill_gradient(low = "#6C6EA0", high = "#FF1053") +
+    theme(
+    # Set the background of the plot area (panel) to black
+    panel.background = element_rect(fill = "black"),
+    
+    # Set the background of the entire plot (including outer area) to black
+    plot.background = element_rect(fill = "black"),
+    
+    # Set the background of the legend to black (if applicable)
+    legend.background = element_rect(fill = "black"),
+    
+    # Set axis text color to white for visibility
+    axis.text = element_text(color = "white"),
+    
+    # Set axis title color to white
+    axis.title = element_text(color = "white"),
+    
+    # Set grid line color to gray (for visibility on black background)
+    panel.grid = element_line(color = "black"),
 
+    legend.text = element_text(color = "white")
+  )
+  })
 
 
   output$col <- renderPlotly({
