@@ -41,11 +41,40 @@ data <- data %>%
 data <- data %>%
   mutate(Data = as.Date(Data, format = "%Y-%m-%d"))
 
+
+
+# Custom function to translate weekdays (handles both English and Polish)
+translate_weekdays <- function(day) {
+  # Mapping English and Polish names to Polish
+  english_to_polish <- c(
+    "Monday" = "poniedziałek",
+    "Tuesday" = "wtorek",
+    "Wednesday" = "środa",
+    "Thursday" = "czwartek",
+    "Friday" = "piątek",
+    "Saturday" = "sobota",
+    "Sunday" = "niedziela"
+  )
+  
+  polish_names <- c("poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela")
+  
+  # Check if the name is already Polish; if so, return it as is
+  if (day %in% polish_names) {
+    return(day)
+  }
+  
+  # Otherwise, translate English to Polish
+  return(english_to_polish[day])
+}
+
+# Apply the function to your data
 data <- data %>%
   mutate(dzienTygodnia = weekdays(Data),
+         dzienTygodnia = sapply(dzienTygodnia, translate_weekdays),
          dzienTygodnia = factor(dzienTygodnia,
                                 levels = c("poniedziałek", "wtorek", "środa",
-                                           "czwartek", "piątek", "sobota", "niedziela"))) #nolint
+                                           "czwartek", "piątek", "sobota", "niedziela")))
+
 
 ui1 <- fluidPage(
 
@@ -186,7 +215,7 @@ server <- function(input, output) {
                     group = Imie, color = Imie), size = 0.75) +
       scale_color_manual(values = c("Antoni" = "#66C7F4", "Jan" = "#6C6EA0", "Kacper" = "#FF1053")) + #nolint
       labs(y = "Średnia wartość dla wszystkich",
-           x = "Dzień tygodnia", color = "Średnia wartość dla osoby",
+           x = "Dzień tygodnia", color = "Średnia \ndla osoby",
            title = paste("Średnie wartości: ", choice_labels_reversed[[input$y]])) + #nolint
       theme_minimal()
 
