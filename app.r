@@ -5,6 +5,9 @@ library(plotly)
 library(tidyr)
 library(shinythemes)
 
+
+width_image = "100%"
+
 choice_labels <- list(
   "Kalorie [kcal]" = "Kalorie",
   "Aktywność [min]" = "Aktywnosc",
@@ -106,15 +109,136 @@ ui1 <- fluidPage(
         tabPanel("Wykres słupkowy", plotlyOutput("col"))
       )
     )
+
+
   )
 )
 
-ui2 <- fluidPage()
+
+
+ui2 <- fluidPage(
+  tags$head(
+    tags$style(HTML("
+        .fade-in {
+          animation: fadeIn 2s ease-in-out;
+        }
+    
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      "))
+  ),
+  tags$head(
+    tags$style(HTML("
+    .highlight:hover {
+      color: #FF5733;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+  "))
+  ),
+  tags$head(
+    tags$style(HTML("
+    .gradient-border {
+      border: 4px solid;
+      border-image-slice: 1;
+      border-width: 4px;
+      border-image-source: linear-gradient(to right, #66C7F4, #6C6EA0, #FF1053);
+      padding: 15px;
+      border-radius: 10px;
+    }
+  "))
+  ),
+  tabsetPanel(
+    tabPanel("Wniosek: nauka", 
+             fluidRow(
+               column(6, img(src = "nauka.png", width = width_image)),
+               column(6, 
+                      div(class = "fade-in gradient-border",
+                          p(span("Na wykresie widoczne są następujące trendy:"), class = "highlight"),
+                          p(span("a) Antoni uczy się średnio tyle samo niezależnie od okresu;"), class = "highlight"), 
+                          p(span("b) Jan najwięcej uczył się przed świętami, a najmniej w czasie świąt;"), class = "highlight"),
+                          p(span("c) Kacper podobniej jak Jan, aczkolwiek tu mniej to widać."), class = "highlight") 
+                      ))
+             )
+    ),
+    tabPanel("Wniosek: kroki", 
+             fluidRow(
+               column(6, img(src = "kroki.png", width = width_image)),
+               column(6, 
+                      div(class = "fade-in gradient-border",
+                          p(span("Na przedstawionym wykresie ramka-wąsy widać, że:"), class = "highlight"),
+                          p(span("a) minimum kroków Antoniego to mniej więcej 3 kwartyl Jana i Kacpra (~8000);"), class = "highlight"),
+                          p(span("b) maksimum Antoniego z kroków to 33500 kroków;"), class = "highlight"),
+                          p(span("c) mediana Antoniego (~17500) jest większa niż maksimum Jana i Kacpra."), class = "highlight")
+                      )
+               )
+             )   
+    ),
+    tabPanel("Wniosek: sen", 
+             fluidRow(
+               column(6, img(src = "sen.png", width = width_image)),
+               column(6,
+                      div(class = "fade-in gradient-border",
+                          p(span("a) Nawyki senne Antoniego i Jana są bardzo zbliżone do siebie - najczęściej spali 8 godzin."), class = "highlight"),
+                          p(span("b) Sen Kacpra ma rozkład zbliżony do rozkładu jednostajnego na przedziale [4, 11]."), class = "highlight")
+                      )
+               )
+             )
+    ),
+    tabPanel("Wniosek: zadowolenie",
+             column(6, fluidRow(p(span("Zadowolenie przed przerwą świąteczną"), class = "highlight"),
+                                img(src = "zadowolenie_przed_swietami.png", width = width_image),
+                                p(span("Zadowolenie w czasie przerwy świątecznej"), class = "highlight"),
+                                img(src = "zadowolenie_swieta.png", width = width_image)
+             )),
+             column(6, fluidRow(
+               div(class = "fade-in gradient-border",
+                   p(span("a) Antoni i Kacper byli szczęśliwsi w czasie przerwie przerwy świątecznej niż przed nią."), class = "highlight"),
+                   p(span("b) Przeciwną zależność można zauważyć u Janka - był szczęśliwszy przed świętami."), class = "highlight")))
+             )
+    ),
+    tabPanel("Wniosek: aktywność", 
+             fluidRow(column(6, img(src = "aktywnosc.png", width = width_image)),
+                      column(6,
+                             div(class = "fade-in gradient-border",
+                                 p(span("a) W ciągu tygodnia akademickiego jesteśmy najbardziej aktywni w środę i piątek, ponieważ w te dni jest mało zajęć."), class = "highlight"),
+                                 p(span("b) Antoni preferuje ćwiczyć w piątki, Jan w piątki i soboty, a Kacper w niedziele."), class = "highlight"),
+                             )))
+    )
+  ))
+
+
+
+
+
+ui3 <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("time_range", "Wybierz zakres czasu",
+                  min = min(data$Data), max = max(data$Data),
+                  value = c(min(data$Data), max(data$Data)),
+                  timeFormat = "%Y-%m-%d"),
+      selectInput("x_axis", "Oś X", choices = choice_labels),
+      selectInput("y_axis", "Oś Y", choices = choice_labels)
+    ),
+    mainPanel(
+      plotlyOutput("bubble_chart")
+    )
+  )
+)
+
+
+
 
 ui <- navbarPage("TWD Projekt 2",
                  tabPanel("Wykresy interaktywne", ui1),
+                 tabPanel("Wykres animowany (WOW!)", ui3),
                  tabPanel("Wnioski", ui2),
                  theme = shinytheme("lumen"))
+
+
 
 server <- function(input, output) {
 
@@ -221,7 +345,69 @@ server <- function(input, output) {
 
     ggplotly(colplot)
   })
-
+  
+  
+  
+  
+  
+  
+  output$bubble_chart <- renderPlotly({
+    filtered_data <- data %>%
+      filter(Data >= input$time_range[1], Data <= input$time_range[2])
+    
+    correlations <- filtered_data %>%
+      group_by(Imie) %>%
+      summarise(correlation = abs(cor(get(input$x_axis), get(input$y_axis), use = "complete.obs", method = "spearman")) ) %>%
+      ungroup()
+    
+    filtered_data <- filtered_data %>%
+      left_join(correlations, by = "Imie")
+    
+    bubble_plot <- filtered_data %>%
+      ggplot(aes_string(
+        x = input$x_axis,
+        y = input$y_axis,
+        size = "correlation",
+        color = "Imie",
+        frame = "Data"
+      )) +
+      geom_point(alpha = 0.7) +
+      scale_size(range = c(3, 15)) +
+      scale_color_manual(values = c("#66C7F4", "#6C6EA0", "#FF1053")) +
+      theme_minimal() +
+      labs(title = "Rozmiar bąbelków to korelacja Spearmana x oraz y", color = "Osoba", x = input$x_axis, y = input$y_axis) +
+      guides(size = "none")
+    
+    ggplotly(bubble_plot, tooltip = c("x", "y", "size", "color", "frame"))
+  })
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
 shinyApp(ui = ui, server = server)

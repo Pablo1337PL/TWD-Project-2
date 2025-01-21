@@ -5,6 +5,6 @@ account: jantar
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13618057
-bundleId: 9539914
+bundleId: 9678561
 url: https://jantar.shinyapps.io/twd-project-2/
 version: 1
