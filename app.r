@@ -341,6 +341,7 @@ server <- function(input, output) {
       labs(y = "Średnia wartość dla wszystkich",
            x = "Dzień tygodnia", color = "Średnia \ndla osoby",
            title = paste("Średnie wartości: ", choice_labels_reversed[[input$y]])) + #nolint
+      scale_y_continuous(expand = c(0,0),limits=c(0,max(line_data$val)*1.05))+
       theme_minimal()
 
     ggplotly(colplot)
