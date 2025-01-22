@@ -20,7 +20,7 @@ Za pomocą naszego dashboarda na podstawie zebranych przez nas danych (w wybrany
 - wykres słupkowy( słupki oznaczają średnią wartość dla wszystkich, a linie wartość dla każdego z osobna)
 - specjalny animowany wykres na którym można łatwo dostrzec poziom korelacji między dowolnymi dwona zebranymi przez nas danymi
 
-W naszym dashboardzie umieściliśmy też niektóre wnioski jakie wyciągneliśmy z analizy zebranych danych, której dokonaliśy używając naszego dashboardu.
+W naszym dashboardzie umieściliśmy też niektóre wnioski jakie wyciągneliśmy z analizy zebranych danych, której dokonaliśmy używając naszego dashboardu.
 
 Link to our glorious shiny app
 
