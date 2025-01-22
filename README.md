@@ -22,6 +22,4 @@ Za pomocą naszego dashboarda na podstawie zebranych przez nas danych (w wybrany
 
 W naszym dashboardzie umieściliśmy też niektóre wnioski jakie wyciągneliśmy z analizy zebranych danych, której dokonaliśmy używając naszego dashboardu.
 
-Link to our glorious shiny app
-
-[Shiny app](https://jantar.shinyapps.io/twd-project-2/)
+[Dashboard](https://jantar.shinyapps.io/twd-project-2/)
